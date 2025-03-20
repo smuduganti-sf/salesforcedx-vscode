@@ -39,8 +39,20 @@ export class O11yReporter extends Disposable implements TelemetryReporter {
     properties?: { [key: string]: string },
     measurements?: { [key: string]: number }
   ): void {
-    if (this.userOptIn) {
-      this.o11yService.logEvent(properties);
+    if (this.userOptIn && eventName) {
+      const orgId = WorkspaceContextUtil.getInstance().orgId;
+      const orgShape = WorkspaceContextUtil.getInstance().orgShape || '';
+      const devHubId = WorkspaceContextUtil.getInstance().devHubId || '';
+      let props = properties ? properties : {};
+      props = this.applyTelemetryTag(orgId ? { ...props, orgId, orgShape, devHubId } : props);
+
+      this.o11yService.logEvent({
+        name: `${this.extensionId}/${eventName}`,
+        // tslint:disable-next-line:object-literal-shorthand
+        properties: props,
+        // tslint:disable-next-line:object-literal-shorthand
+        measurements
+      });
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.o11yService.upload();
     }
@@ -66,6 +78,9 @@ export class O11yReporter extends Disposable implements TelemetryReporter {
         properties,
         measurements
       });
+
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.o11yService.upload();
     }
   }
 
