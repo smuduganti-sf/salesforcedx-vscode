@@ -7,7 +7,7 @@
 
 import { workspace } from 'vscode';
 import { WorkspaceContextUtil } from '../../../../src/context/workspaceContextUtil';
-import { O11yService } from '../../../../src/services/O11yService';
+import { O11yService } from '../../../../src/services/o11yService';
 import { O11yReporter } from '../../../../src/telemetry/reporters/o11yReporter';
 
 describe('O11yReporter', () => {

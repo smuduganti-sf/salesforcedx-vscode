@@ -8,7 +8,7 @@
 import { TelemetryReporter } from '@salesforce/vscode-service-provider';
 import { Disposable, workspace } from 'vscode';
 import { WorkspaceContextUtil } from '../../context/workspaceContextUtil';
-import { O11yService } from '../../services/O11yService';
+import { O11yService } from '../../services/o11yService';
 
 export class O11yReporter extends Disposable implements TelemetryReporter {
   private userOptIn: boolean = false;

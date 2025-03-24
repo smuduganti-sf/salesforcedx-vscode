@@ -8,18 +8,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 
 import axios from 'axios';
 import { loadO11yModules } from '../telemetry/utils/O11yLoader';
 
 export class O11yService {
-  clickTrackActive = false;
-  CORE_UPLOAD_THRESHOLD = 50000;
-  ccUploadEndpoint: string | undefined;
-  isRightPaneCollapsed = false;
-  showCoreCollectorStats: boolean | undefined;
+  O11Y_UPLOAD_THRESHOLD_BYTES = 50000;
+  o11yUploadEndpoint: string | undefined;
   instrumentation: any;
   _instrApp: any;
   protoEncoderFunc: any;
@@ -41,8 +36,8 @@ export class O11yService {
     return O11yService.instance;
   }
 
-  async initialize(extensionName: string, ccUploadEndpoint: string) {
-    this.ccUploadEndpoint = ccUploadEndpoint;
+  async initialize(extensionName: string, o11yUploadEndpoint: string) {
+    this.o11yUploadEndpoint = o11yUploadEndpoint;
     // Ensure modules are loaded before using them
     this.o11yModules = await loadO11yModules();
 
@@ -122,7 +117,7 @@ export class O11yService {
     const simpleCollector = this._instrApp.simpleCollector;
     if (
       simpleCollector?.hasData &&
-      (ignoreThreshold || simpleCollector.estimatedByteSize >= this.CORE_UPLOAD_THRESHOLD)
+      (ignoreThreshold || simpleCollector.estimatedByteSize >= this.O11Y_UPLOAD_THRESHOLD_BYTES)
     ) {
       const rawContents = simpleCollector.getRawContentsOfCoreEnvelope();
       const binary = this.protoEncoderFunc(rawContents);
@@ -135,11 +130,11 @@ export class O11yService {
   async uploadToFalconAsync(binary: Uint8Array): Promise<Response> {
     const b64 = Buffer.from(binary).toString('base64');
 
-    if (!this.ccUploadEndpoint) {
+    if (!this.o11yUploadEndpoint) {
       throw new Error('ccUploadEndpoint is not defined');
     }
 
-    return this.postRequest(this.ccUploadEndpoint, { base64Env: b64 });
+    return this.postRequest(this.o11yUploadEndpoint, { base64Env: b64 }) as Promise<Response>;
   }
 
   async postRequest(endpoint: string, body: any): Promise<any> {
@@ -149,11 +144,14 @@ export class O11yService {
       });
 
       return response.data;
-    } catch (error: any) {
-      console.error('Failed to post request:', error.message);
-      if (error.response) {
-        console.error(`Error Response Status: ${error.response.status}`);
-        console.error(`Error Response Data: ${JSON.stringify(error.response.data)}`);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Failed to post request:', error.message);
+        if (error.response) {
+          console.error(`Error Response Status: ${error.response.status}`);
+        }
+      } else {
+        console.error('Unknown error:', error);
       }
       throw error;
     }
