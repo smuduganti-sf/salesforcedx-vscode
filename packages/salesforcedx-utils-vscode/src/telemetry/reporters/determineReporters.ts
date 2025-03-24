@@ -63,7 +63,7 @@ const addAppInsightsReporter = (
   reporters.push(new AppInsights(reporterName, version, aiKey, userId, true));
 };
 
-export const initializeO11yReporter = async (extName: string, ccUploadEndpoint: string) => {
+export const initializeO11yReporter = async (extName: string, o11yUploadEndpoint: string) => {
   if (o11yReporterInstance) return;
 
   if (getO11yInitializationPromise()) {
@@ -71,9 +71,9 @@ export const initializeO11yReporter = async (extName: string, ccUploadEndpoint: 
     return;
   }
 
-  o11yReporterInstance = new O11yReporter(extName, ccUploadEndpoint);
+  o11yReporterInstance = new O11yReporter(extName, o11yUploadEndpoint);
   const initPromise = o11yReporterInstance
-    .initialize(extName, ccUploadEndpoint)
+    .initialize(extName, o11yUploadEndpoint)
     .catch(err => {
       console.error('O11y initialization failed:', err);
       o11yReporterInstance = null;

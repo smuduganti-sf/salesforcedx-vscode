@@ -102,11 +102,11 @@ export class TelemetryService implements TelemetryServiceInterface {
    * @param extensionContext extension context
    */
   public async initializeService(extensionContext: ExtensionContext): Promise<void> {
-    const { name, version, aiKey, ccUploadEndpoint, enableO11y } = extensionContext.extension.packageJSON as {
+    const { name, version, aiKey, o11yUploadEndpoint, enableO11y } = extensionContext.extension.packageJSON as {
       name: string;
       version: string;
       aiKey: string;
-      ccUploadEndpoint: string;
+      o11yUploadEndpoint: string;
       enableO11y: string;
     };
     if (!name) {
@@ -142,7 +142,7 @@ export class TelemetryService implements TelemetryServiceInterface {
       };
 
       if (enableO11y) {
-        await initializeO11yReporter(reporterConfig.extName, ccUploadEndpoint);
+        await initializeO11yReporter(reporterConfig.extName, o11yUploadEndpoint);
       }
 
       const reporters = determineReporters(reporterConfig);

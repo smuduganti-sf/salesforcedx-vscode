@@ -12,7 +12,7 @@ import { O11yService } from '../../services/o11yService';
 
 export class O11yReporter extends Disposable implements TelemetryReporter {
   private userOptIn: boolean = false;
-  private ccUploadEndpoint: string;
+  private o11yUploadEndpoint: string;
   private toDispose: Disposable[] = [];
   private readonly o11yService: O11yService;
 
@@ -21,17 +21,17 @@ export class O11yReporter extends Disposable implements TelemetryReporter {
 
   constructor(
     private extensionId: string,
-    ccUploadEndpoint: string
+    o11yUploadEndpoint: string
   ) {
     super(() => this.toDispose.forEach(d => d && d.dispose()));
     this.o11yService = O11yService.getInstance();
     this.userOptIn = true; // Assume opt-in for now
-    this.ccUploadEndpoint = ccUploadEndpoint;
+    this.o11yUploadEndpoint = o11yUploadEndpoint;
     this.setTelemetryTag();
   }
 
-  public async initialize(extensionName: string, ccUploadEndpoint: string): Promise<void> {
-    await this.o11yService.initialize(extensionName, ccUploadEndpoint);
+  public async initialize(extensionName: string, o11yUploadEndpoint: string): Promise<void> {
+    await this.o11yService.initialize(extensionName, o11yUploadEndpoint);
   }
 
   public sendTelemetryEvent(
