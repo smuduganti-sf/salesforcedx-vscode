@@ -92,8 +92,13 @@ export class O11yService {
   }
 
   async upload(): Promise<void> {
-    // Log anything that was buffered
-    await this.uploadAsNeededAsync(true);
+    try {
+      // Log anything that was buffered
+      await this.uploadAsNeededAsync(true);
+    } catch (error) {
+      // We log the failure but do not throw, preventing disruptions in telemetry reporting.
+      console.error('Telemetry upload failed:', error);
+    }
   }
 
   initSimpleCollector(
@@ -129,15 +134,17 @@ export class O11yService {
   uploadAsNeededAsync(ignoreThreshold = false): Promise<PromiseSettledResult<Response>[]> {
     const promises: Promise<Response>[] = [];
 
+    if (!this.protoEncoderFunc) {
+      console.error('protoEncoderFunc is not initialized');
+      return Promise.resolve([]); // Prevents the function from throwing an error
+    }
+
     const simpleCollector = this._instrApp.simpleCollector;
     if (
       simpleCollector?.hasData &&
       (ignoreThreshold || simpleCollector.estimatedByteSize >= this.O11Y_UPLOAD_THRESHOLD_BYTES)
     ) {
       const rawContents = simpleCollector.getRawContentsOfCoreEnvelope();
-      if (!this.protoEncoderFunc) {
-        throw new Error('protoEncoderFunc is not initialized');
-      }
       const binary = this.protoEncoderFunc(rawContents);
       promises.push(this.uploadToFalconAsync(binary));
     }
@@ -149,7 +156,7 @@ export class O11yService {
     const b64 = Buffer.from(binary).toString('base64');
 
     if (!this.o11yUploadEndpoint) {
-      throw new Error('o11yUploadEndpoint is not defined');
+      return Promise.reject(new Error('o11yUploadEndpoint is not defined'));
     }
 
     return this.postRequest(this.o11yUploadEndpoint, { base64Env: b64 }) as Promise<Response>;
