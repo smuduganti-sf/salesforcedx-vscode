@@ -7,21 +7,17 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 import axios from 'axios';
-import { loadO11yModules } from '../telemetry/utils/O11yLoader';
+import { loadO11yModules } from '../telemetry/utils/o11yLoader';
 
 export class O11yService {
   O11Y_UPLOAD_THRESHOLD_BYTES = 50000;
   o11yUploadEndpoint: string | undefined;
-  instrumentation: any;
-  _instrApp: any;
-  protoEncoderFunc: any;
-  o11y: any;
-  o11yClient: any;
-  o11ySchema: any;
-  a4dO11ySchema: any;
+  instrumentation: Instrumentation;
+  _instrApp: InstrumentedAppMethods;
+  protoEncoderFunc: ProtoEncoderFuncType | null = null;
+  a4dO11ySchema: unknown;
   readonly environment: Record<string, string> = {};
   private o11yModules: Awaited<ReturnType<typeof loadO11yModules>> | null = null;
   private static instance: O11yService | null = null;
@@ -41,8 +37,14 @@ export class O11yService {
     // Ensure modules are loaded before using them
     this.o11yModules = await loadO11yModules();
 
-    const { o11yClientVersion, getInstrumentation, registerInstrumentedApp, ConsoleCollector } = this.o11yModules;
-    const { o11ySchemaVersion, a4d_instrumentation } = this.o11yModules;
+    const {
+      o11yClientVersion,
+      o11ySchemaVersion,
+      getInstrumentation,
+      registerInstrumentedApp,
+      ConsoleCollector,
+      a4d_instrumentation
+    } = this.o11yModules!;
 
     this.instrumentation = getInstrumentation(extensionName + '-instrumentation');
     this.a4dO11ySchema = a4d_instrumentation;
@@ -50,13 +52,9 @@ export class O11yService {
     Object.assign(this.environment, {
       appName: extensionName + '-extension',
       o11ySchemaVersion,
-      appExperience: 'Sample',
-      deviceId: 'Unknown',
-      deviceModel: 'Unknown',
       sdkVersion: `${o11yClientVersion}:${o11ySchemaVersion}`
     });
 
-    // Use `registerInstrumentedApp` if needed
     // STEP 1: Register the app
     this._instrApp = registerInstrumentedApp(extensionName + '-extension', {
       isProduction: false,
@@ -67,10 +65,14 @@ export class O11yService {
     this._instrApp.registerLogCollector(new ConsoleCollector());
 
     // STEP 3: Register a metrics collector
-    this._instrApp.simpleCollector = await this.initSimpleCollector(this._instrApp, {
-      appName: this.environment.appName,
-      sdkVersion: this.environment.sdkVersion
-    });
+    this._instrApp.simpleCollector = this.initSimpleCollector(
+      this._instrApp,
+      {
+        appName: this.environment.appName,
+        sdkVersion: this.environment.sdkVersion
+      },
+      this.o11yModules
+    );
   }
 
   private getEndHRTime(hrstart: [number, number]): number {
@@ -94,13 +96,26 @@ export class O11yService {
     await this.uploadAsNeededAsync(true);
   }
 
-  async initSimpleCollector(o11yApp: any, environment: any): Promise<any> {
-    const [simpleCollectorModule, collectorsModule] = await Promise.all([
-      import('o11y/simple_collector'),
-      import('o11y/collectors')
-    ]);
+  initSimpleCollector(
+    o11yApp: InstrumentedAppMethods,
+    environment: Environment,
+    o11yModules: Awaited<ReturnType<typeof loadO11yModules>> | null
+  ): Promise<SimpleCollector> {
+    if (!o11yModules) {
+      throw new Error('o11yModules is null');
+    }
 
-    this.protoEncoderFunc = (collectorsModule.default || collectorsModule).encodeCoreEnvelopeContentsRaw;
+    const { simpleCollectorModule, collectorsModule } = o11yModules;
+
+    this.protoEncoderFunc =
+      (
+        (collectorsModule.default || collectorsModule) as {
+          encodeCoreEnvelopeContentsRaw?: ProtoEncoderFuncType;
+        }
+      )?.encodeCoreEnvelopeContentsRaw ??
+      (() => {
+        throw new Error('encodeCoreEnvelopeContentsRaw is undefined');
+      });
 
     const simpleCollector = new (simpleCollectorModule.default || simpleCollectorModule).SimpleCollector({
       environment
@@ -120,6 +135,9 @@ export class O11yService {
       (ignoreThreshold || simpleCollector.estimatedByteSize >= this.O11Y_UPLOAD_THRESHOLD_BYTES)
     ) {
       const rawContents = simpleCollector.getRawContentsOfCoreEnvelope();
+      if (!this.protoEncoderFunc) {
+        throw new Error('protoEncoderFunc is not initialized');
+      }
       const binary = this.protoEncoderFunc(rawContents);
       promises.push(this.uploadToFalconAsync(binary));
     }

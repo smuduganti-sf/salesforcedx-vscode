@@ -28,8 +28,6 @@ export const clearO11yInitializationPromise = () => {
   o11yInitializationPromise = null;
 };
 
-const TARGET_EXTENSION = 'salesforcedx-einstein-gpt'; // Change this to your desired extension
-
 export const determineReporters = (config: TelemetryReporterConfig) => {
   const { extName, version, aiKey, userId, reporterName, isDevMode } = config;
   const reporters: TelemetryReporter[] = [];
