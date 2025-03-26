@@ -71,7 +71,7 @@ export const initializeO11yReporter = async (extName: string, o11yUploadEndpoint
 
   o11yReporterInstance = new O11yReporter(extName, o11yUploadEndpoint);
   const initPromise = o11yReporterInstance
-    .initialize(extName, o11yUploadEndpoint)
+    .initialize(extName)
     .catch(err => {
       console.error('O11y initialization failed:', err);
       o11yReporterInstance = null;

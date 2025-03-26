@@ -75,12 +75,6 @@ export class O11yService {
     );
   }
 
-  private getEndHRTime(hrstart: [number, number]): number {
-    const hrend = process.hrtime(hrstart);
-    const elapsedMilliseconds = hrend[0] * 1000 + hrend[1] / 1e6;
-    return elapsedMilliseconds;
-  }
-
   public logEvent(properties?: { [key: string]: any }): void {
     if (this.instrumentation) {
       this.instrumentation.log(this.a4dO11ySchema, {

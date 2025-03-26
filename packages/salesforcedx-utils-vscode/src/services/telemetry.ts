@@ -141,16 +141,14 @@ export class TelemetryService implements TelemetryServiceInterface {
         isDevMode: this.isDevMode
       };
 
-      const isO11yEnabled = enableO11y?.toLowerCase() === 'true';
+      const isO11yEnabled = typeof enableO11y === 'boolean' ? enableO11y : enableO11y?.toLowerCase() === 'true';
 
       if (isO11yEnabled) {
         if (!o11yUploadEndpoint || typeof o11yUploadEndpoint !== 'string') {
           console.log('Invalid o11yUploadEndpoint: must be a non-empty string when enableO11y is true.');
-          return; // Exit early to prevent issues
+          return;
         }
-      }
 
-      if (isO11yEnabled) {
         await initializeO11yReporter(reporterConfig.extName, o11yUploadEndpoint);
       }
 

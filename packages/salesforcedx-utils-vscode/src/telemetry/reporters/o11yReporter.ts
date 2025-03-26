@@ -32,8 +32,8 @@ export class O11yReporter extends Disposable implements TelemetryReporter {
     this.setTelemetryTag();
   }
 
-  public async initialize(extensionName: string, o11yUploadEndpoint: string): Promise<void> {
-    await this.o11yService.initialize(extensionName, o11yUploadEndpoint);
+  public async initialize(extensionName: string): Promise<void> {
+    await this.o11yService.initialize(extensionName, this.o11yUploadEndpoint);
   }
 
   public sendTelemetryEvent(
