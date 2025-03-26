@@ -5,8 +5,25 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
+/*
+ * Disabling these ESLint rules because:
+ * - `@typescript-eslint/no-unsafe-call`: The telemetry modules from `o11yModules`
+ *   (e.g., `getInstrumentation`, `registerInstrumentedApp`, `ConsoleCollector`, `a4d_instrumentation`).
+ *   Refactoring them would require upstream type fixes that are outside the scope of this service.
+ * - `@typescript-eslint/no-unsafe-assignment`: `o11yModules` is dynamically imported via `loadO11yModules()`,
+ *   and its properties (`o11yClientVersion`, `o11ySchemaVersion`, etc.) lack strict TypeScript typings.
+ *   Assigning them directly triggers this rule, but they are known to be valid based on runtime behavior.
+ * - `@typescript-eslint/no-unsafe-member-access`: Accessing properties on `o11yModules` (e.g., `simpleCollectorModule`,
+ *   `collectorsModule`, `encodeCoreEnvelopeContentsRaw`) is flagged as unsafe because TypeScript
+ *   cannot infer their structure at compile time. However, these properties are safely used
+ *   within the expected API contracts of the O11y SDK.
+ *
+ * TODO: Revisit this once the `o11yModules` typings are improved or consider wrapping them in explicit type definitions.
+ */
+
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 import axios from 'axios';
 import { loadO11yModules } from '../telemetry/utils/o11yLoader';
